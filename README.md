@@ -3,10 +3,8 @@
 csstosvg
 ========
 
-Easily add shadows to SVG elements using CSS syntax.  Works by itself or with libraries such as D3, jQuery, Zepto.
+Easily add shadows to SVG elements using standard CSS box-shadow syntax.  Works by itself or with libraries such as D3, jQuery, Zepto.
 
-Syntax:
-inset? && <offset-x> <offset-y> <blur-radius>? <spread-radius>? <color>?
 
 Example CSS strings you can pass to csstosvg:
 
