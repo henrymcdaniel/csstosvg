@@ -2,18 +2,13 @@
 
 csstosvg
 ========
-
-Easily add shadows to SVG elements using standard CSS box-shadow syntax.  Works by itself or with libraries such as D3, jQuery, Zepto.
-
+Dependency free(!) way to easily apply CSS box-shadow rules to SVG elements. Optionally you can use it with libraries such as D3, jQuery and Zepto.
 
 Example CSS strings you can pass to csstosvg:
 
 box-shadow: 3px 3px teal;
-
 box-shadow: 4px 5px 4px black;
-
 box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
-
 box-shadow: inset 5px 1px gold;
 
 
@@ -26,6 +21,7 @@ Example usage:
 -D3 object
 -jQuery / Zepto object
 
+See a gist at https://gist.github.com/sunsetrainbow/90ecf7fd1174191f01b4.js
 
 LIMITATIONS
 *You can't specify multiple shadows on the same object (yet).
