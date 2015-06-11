@@ -21,7 +21,6 @@ Example usage:
 -D3 object
 -jQuery / Zepto object
 
-See a gist at https://gist.github.com/sunsetrainbow/90ecf7fd1174191f01b4.js
 
 LIMITATIONS
 *You can't specify multiple shadows on the same object (yet).
