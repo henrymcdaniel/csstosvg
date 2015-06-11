@@ -139,6 +139,9 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 					filter=self.SVG.createElement(NS,'filter');
 					filter.setAttributeNS(null,'id',p.id);
 				} else {
+					bottomLayer='SourceGraphic';
+					bottomLayerA=bottomLayer0='SourceAlpha';
+					bottomLayer='SourceAlpha';
 					filter=addToFilter;
 				}
 
