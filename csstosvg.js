@@ -1,4 +1,5 @@
 // Author: Henry McDaniel / henry@sunsetrainbow.com
+// https://github.com/sunsetrainbow/csstosvg
 // Simple tool for applying basic shadows to SVG elements.
 
 csstosvg = { };
