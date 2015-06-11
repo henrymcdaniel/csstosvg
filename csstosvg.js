@@ -30,9 +30,26 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 			if (el && el[0] && el[0][0]) {
 				context = el[0][0].ownerSVGElement;
 			} else {
-				self.Utility.perror('could not find root SVG element for selected element');
+				context=el.parentElement;
 			}
 			return context;
+		},
+		
+		attr: function(el,prop) {
+			var v=0;
+			if (typeof el.attr == 'function') {
+				v= el.attr(prop);
+			} else {
+				v= el.getAttribute(prop);
+			}
+			return v;
+		},
+		setAttr: function(el,prop,v) {
+			if (typeof el.attr == 'function') {
+				el.attr(prop,v);
+			} else {
+				el.setAttribute(prop,v);
+			}			
 		}
 	};
 	self.Parse = {
@@ -43,16 +60,53 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 		isNumeric: function (obj) {
 			return (obj[0]=='0' || obj[0]=='-' || parseInt(obj) ? true : false);
 		},
-
 		color: function (str) {
-			var out;
-			if (str[str.length-1]==';') {
-				out=str.substring(0,str.length-1);
-			} else {
-				out=str;
+			var out='',
+				opacity=1,
+				error=0;
+
+			if (str.length<3) {
+				error++;
+			} else if (str.indexOf('rgb(')>-1||str.indexOf('rgba(')>-1) {
+				str = str.replace(/(rgb\(|rgba\(|\)|;|\s)/gi,'');
+				var codes=str.split(',');
+				if (codes && codes.length>2) {
+					out='rgb(';
+					for (var i=0; i < 3; i++) {
+						if (!self.Parse.isNumeric(codes[i])) {
+							error++;
+							break;
+						}
+						out+=codes[i]+(i<2?',':'');
+					}
+					out+=')';
+					if (codes.length==4) {
+						opacity = codes[3];
+						if (!self.Parse.isNumeric(opacity)) {
+							error++;
+						}
+					}
+				} else {
+					error++;
+				}
+			} else {			
+				if (str[str.length-1]==';') {
+					out=str.substring(0,str.length-1);
+				} else {
+					out=str;
+				}
 			}
-			return out;
-		}
+			var ret= {
+				color: out,
+				opacity: opacity,
+				error:error
+			};
+			return ret;
+		},
+		cssLineSplit: function (s) {
+			var lines= s.replace(/(#[a-z0-9]*|\)),/ig, '$1\u000B').split('\u000B');
+			return lines;
+		}	
 	};
 	self.SVG = {
 	
@@ -169,7 +223,7 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 					offsetX: { require: true, number: true, def: 0 },
 					offsetY: { require: true, number: true, def: 0 },
 					blurRadius: { require: false, number: true, percentAllowed: true, def: '100%' },
-					spreadRadius: { require: false, number: true, percentAllowed: true, def: '100%' },
+					spreadRadius: { require: false, number: true, percentAllowed: true, def: '0' },
 					color: { require: false, number: false, color: true, def: '' }
 					},
 				offset=0,
@@ -207,12 +261,19 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 						if (!number) {
 							if (params[key].number) {
 								if (params[key].required) {
-									error=1;
+									error++;
+									self.Utility.perror('number expected. instead got: "'+value+'"');
 								} else {
 									continue;
 								}
 							} else if (params[key].color) {
-								value = self.Parse.color(value);
+								var tmp = self.Parse.color(value);
+								value = tmp.color;
+								out['opacity'] = tmp.opacity;
+								error+=tmp.error;
+								if (error) {
+									self.Utility.perror('color malformed: "'+tmp.color+'"');
+								}
 							}
 						}
 						else {
@@ -234,7 +295,8 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 
 		INboxShadow : function(str) {
 			var out={ error: 0, group: [] },
-				lists=str.split(',');
+				lists=self.Parse.cssLineSplit(str);
+//str.split(', ');
 			for (var i=0; i<lists.length; i++)
 			{
 				out.group[i]=self.CSS.boxShadowTriplet(lists[i]);
@@ -248,21 +310,18 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 				return;
 			}
 			var d,
-				spreadX,
-				spreadY,
 				ID;
 				
 			for (var i=0; i < params.group.length; i++) {
 				d=params.group[i];
-			if (d.spreadRadius) {
-				self.Utility.perror('boxShadow spread radius not yet supported');
-				d.spreadRadius=0;
-			}
 			
-			var deviation;
+			var deviation,
+				deviationIsPercent=false;
+
 			if (self.Parse.isPercent(d.blurRadius)) {
 				var p=parseInt(d.blurRadius);
 				if (p) {
+					deviationIsPercent=true;
 					p *= 0.5;
 					deviation = p+'%';
 				}
@@ -273,19 +332,46 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 					deviation = 1;
 				}
 			}
-			var opacity=1;
+			var	opacity=(d.opacity ? d.opacity : 1),			
+				negX='-100%', negY='-100%',
+				widthPercent=300;
+
+			if (d.spreadRadius) {
+				var tmp=0,
+					dINT=parseInt(deviation),
+					spread=parseInt(d.spreadRadius),
+					spreadIsPercent = self.Parse.isPercent(d.spreadRadius);
+				
+				if (
+					(spreadIsPercent == deviationIsPercent)
+					|| (!spreadIsPercent && deviationIsPercent)
+				) {
+					dINT += (0.5*spread);					
+				} else {
+					// spreadIsPercent && !deviationIsPercent
+					if (!(tmp=parseInt( self.Utility.attr(elem,'r')))) {
+						tmp=Math.round((self.Utility.attr(elem,'width')+self.Utility.attr(elem,'height'))/2);
+					}
+					dINT += Math.round(0.5 * spread * tmp);
+				}
+				deviation = dINT + (deviationIsPercent ? '%' : '');
+			}
 			
-			var negX='-100%', negY='-100%';
-			var width='300%', height='300%';
 			if (d.inset === true) {
 				negX=0;
 				negY=0;
-				width='230%';
-				height='230%';
+				widthPercent-=70;
 				deviation=6.5;
 			}
+			var width=widthPercent+'%',
+				height=widthPercent+'%';
+
+			var eid = self.Utility.attr(elem,'id');
+			if (!eid) {
+				eid = 'rand-'+Math.floor(Math.random()*1000000);
+			}
+			ID=eid+'-csstosvg'+i;
 			
-			ID=elem.attr('id')+'-csstosvg'+i;
 			obj={
 					id: ID,
 					width: width,
@@ -298,10 +384,12 @@ csstosvg.Internal=  (function(inObj,inCommand) {
 					deviation: deviation,
 					opacity: opacity,
 					color: d.color,
-					inset: d.inset
+					inset: d.inset,
+				
+					spread: spread
 				};
 				self.SVG.createShadow(context,obj);
-				elem.attr('filter','url(#'+ID+')');	
+				self.Utility.setAttr(elem,'filter','url(#'+ID+')');	
 			}
 		},
 
