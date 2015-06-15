@@ -7,8 +7,11 @@ Dependency free(!) way to easily apply CSS box-shadow rules to SVG elements. Opt
 Example CSS strings you can pass to csstosvg:
 
 box-shadow: 3px 3px teal;
+
 box-shadow: 4px 5px 4px black;
+
 box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+
 box-shadow: inset 5px 1px gold;
 
 
