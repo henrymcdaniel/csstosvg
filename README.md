@@ -15,9 +15,10 @@ box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
 box-shadow: inset 5px 1px gold;
 
 
-Example usage:
+**Example Usage**
 
-**csstosvg.apply( obj,'box-shadow: 4px 4px 2px red;');**
+csstosvg.apply( obj,'box-shadow: 4px 4px 2px red;');
+
 
 'obj' must be one of:
 -SVG DOM element
